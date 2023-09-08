@@ -1,27 +1,40 @@
 import React, { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { toggleSideBar } from "../utils/appSlice";
 import { YOUTUBE_SUGGESTIONS_API } from "../utils/constants";
+import { cacheResults } from "../utils/searchSlice";
 
 const Head = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const dispatch = useDispatch();
+  const searchCache = useSelector((store) => store.search);
+  /* searchCache = {
+    "iphone": ["iphone 11","iphone max"]
+  } */
   //Debouncing
   useEffect(() => {
-    const timer = setTimeout(() => getSuggestions(), 200);
+    const timer = setTimeout(() => {
+      if (searchCache[searchQuery]) {
+        setSuggestions(searchCache[searchQuery]);
+      } else {
+        getSuggestions();
+      }
+    }, 200);
 
     return () => {
       clearTimeout(timer);
     };
   }, [searchQuery]);
   const getSuggestions = async () => {
-    //console.log("API CALL - ", searchQuery);
+    console.log("API CALL - ", searchQuery);
     const data = await fetch(YOUTUBE_SUGGESTIONS_API + searchQuery);
     const info = await data.json();
     setSuggestions(info[1]);
+    dispatch(cacheResults({ [searchQuery]: info[1] }));
   };
-  const dispatch = useDispatch();
+
   const toggleHandler = () => {
     dispatch(toggleSideBar());
   };
